@@ -30,6 +30,9 @@ run_model <- function(model = "odin_model",
                            country = NULL,
                            admin2 = NULL,
                            time = 100,
+                           step_size_min_allow = FALSE,
+                           step_size_min = 1e-5,
+                           grow_history = FALSE,
                            ...){
 
   ## create model param list using necessary variables
@@ -44,6 +47,7 @@ run_model <- function(model = "odin_model",
   # create odin generator
   generator <- switch(model,
     "odin_model" = odin_model,
+    "odin_model_2sp" = odin_model_2sp,
     "odin_model_emanators" = odin_model_emanators,
     "odin_model_hrp2" = odin_model_hrp2,
     "odin_model_IVM_SMChet" = odin_model_IVM_SMChet,
@@ -57,7 +61,8 @@ run_model <- function(model = "odin_model",
   state_use <- state[names(state) %in% coef(generator)$name]
 
   # create model with initial values
-  mod <- generator(user = state_use, use_dde = TRUE)
+  mod <- generator(user = state_use, use_dde = TRUE,
+                   grow_history = grow_history, step_size_min_allow = step_size_min_allow, step_size_min = step_size_min)
   tt <- seq(0, time, 1)
 
   # run model
