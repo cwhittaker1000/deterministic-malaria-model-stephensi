@@ -35,6 +35,8 @@ run_model <- function(model = "odin_model",
                            grow_history = FALSE,
                            ...){
 
+  # print("bloop")
+
   ## create model param list using necessary variables
   mpl <- model_param_list_create(...)
 
