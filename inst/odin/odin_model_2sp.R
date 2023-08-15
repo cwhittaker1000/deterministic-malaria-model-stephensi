@@ -232,7 +232,7 @@ dim(rel_foi) <- nh
 rel_foi[] <- user()
 dim(EIR) <- c(na,nh,num_int)
 
-## CHECK THIS NOW WE HAVE MULTIPLE SPECIES
+# CHECK - EIR for each individual species
 EIR_species1[,,] <- av_human1[k] * rel_foi[j] * foi_age[i] * Iv1/omega
 dim(EIR_species1) <- c(na,nh,num_int)
 EIR_species2[,,] <- av_human2[k] * rel_foi[j] * foi_age[i] * Iv2/omega
@@ -297,9 +297,9 @@ initial(Sv1) <- init_Sv * mv0
 initial(Ev1) <- init_Ev * mv0
 initial(Iv1) <- init_Iv * mv0
 
-initial(Sv2) <- init_Sv * mv0 * 0.01 ## CHECK - think this should be fine as the lower carrying capacity will rapidly bring it down, but might want to start close to 0
-initial(Ev2) <- init_Ev * mv0 * 0.01 ## CHECK - think this should be fine as the lower carrying capacity will rapidly bring it down, but might want to start close to 0
-initial(Iv2) <- init_Iv * mv0 * 0.01 ## CHECK - think this should be fine as the lower carrying capacity will rapidly bring it down, but might want to start close to 0
+initial(Sv2) <- init_Sv * mv0 * 0.01 ## CHECK - this is a bit of a fudge, but I think this should be fine as the lower carrying capacity will rapidly bring it down, but might want to start close to 0
+initial(Ev2) <- init_Ev * mv0 * 0.01 ## CHECK - this is a bit of a fudge, but I think this should be fine as the lower carrying capacity will rapidly bring it down, but might want to start close to 0
+initial(Iv2) <- init_Iv * mv0 * 0.01 ## CHECK - this is a bit of a fudge, but I think this should be fine as the lower carrying capacity will rapidly bring it down, but might want to start close to 0
 
 # cA is the infectiousness to mosquitoes of humans in the asmyptomatic compartment broken down
 # by age/het/int category, infectiousness depends on p_det which depends on detection immunity
@@ -315,16 +315,11 @@ dim(FOIvijk_species1) <- c(na,nh,num_int)
 dim(FOIvijk_species2) <- c(na,nh,num_int)
 omega <- user() #normalising constant for biting rates across diff age-groups
 
-## I wonder whether this needs to be species specific, in which case we'd need:
-# av_mosq_species1 & av_mosq_species2 (and everything else downstream of them), including
-# FOIvijk_speciesX, FOIv_speciesX etc
-# Based on reading Jamie's paper, really think these need to be species specific
-#### CHECK
+## CHECK
 FOIvijk_species1[1:na, 1:nh, 1:num_int] <- (cT*T[i,j,k] + cD*D[i,j,k] + cA[i,j,k]*A[i,j,k] + cU*U[i,j,k]) * rel_foi[j] * av_mosq1[k]*foi_age[i]/omega
 lag_FOIv_species1 <- sum(FOIvijk_species1)
 FOIvijk_species2[1:na, 1:nh, 1:num_int] <- (cT*T[i,j,k] + cD*D[i,j,k] + cA[i,j,k]*A[i,j,k] + cU*U[i,j,k]) * rel_foi[j] * av_mosq2[k]*foi_age[i]/omega
 lag_FOIv_species2 <- sum(FOIvijk_species2)
-#### CHECK
 
 # Current hum->mos FOI depends on the number of individuals now producing gametocytes (12 day lag)
 delayGam <- user() # Lag from parasites to infectious gametocytes
@@ -336,11 +331,11 @@ FOIv_species2 <- delay(lag_FOIv_species2, delayGam)
 surv1 <- exp(-mu1*delayMos)
 surv2 <- exp(-mu2*delayMos)
 
-ince1 <- FOIv_species1 * Sv1 ## NOTE AND CHANGE - DOES THIS NEED CHANGING WITH MULTIPLE SPECIES- I THINK SO AS FOIV IS JUST RATE PER MOSQUITO BUT COULD BE WRONG AS GRIFFIN et al HAVE SPECIES SPECIFIC FOI
+ince1 <- FOIv_species1 * Sv1 ## CHECK
 lag_incv1 <- ince1 * surv1
 incv1 <- delay(lag_incv1, delayMos)
 
-ince2 <- FOIv_species2 * Sv2 ## NOTE AND CHANGE - DOES THIS NEED CHANGING WITH MULTIPLE SPECIES- I THINK SO AS FOIV IS JUST RATE PER MOSQUITO BUT COULD BE WRONG AS GRIFFIN et al HAVE SPECIES SPECIFIC FOI
+ince2 <- FOIv_species2 * Sv2 ## CHECK
 lag_incv2 <- ince2 * surv2
 incv2 <- delay(lag_incv2, delayMos)
 
@@ -410,22 +405,24 @@ beta_larval1 <- eov1*mu1*exp(-mu1/fv1)/(1-exp(-mu1/fv1)) # Number of eggs laid p
 eov2 <- betaL/mu2*(exp(mu2/fv2)-1)
 beta_larval2 <- eov2*mu2*exp(-mu2/fv2)/(1-exp(-mu2/fv2)) # Number of eggs laid per day
 
-b_lambda <- (gammaL*muLL/muEL-dEL/dLL+(gammaL-1)*muLL*dEL)
+b_lambda <- (gammaL*muLL/muEL-dEL/dLL+(gammaL-1)*muLL*dEL) ## Parameters assumed to be the same for Species 1 and Species 2
 lambda_species1 <- -0.5*b_lambda + sqrt(0.25*b_lambda^2 + gammaL*beta_larval1*muLL*dEL/(2*muEL*mu0*dLL*(1+dPL*muPL)))
 lambda_species2 <- -0.5*b_lambda + sqrt(0.25*b_lambda^2 + gammaL*beta_larval2*muLL*dEL/(2*muEL*mu0*dLL*(1+dPL*muPL)))
 
 K0_species1 <- 2*mv0*dLL*mu0*(1+dPL*muPL)*gammaL*(lambda_species1+1)/(lambda_species1/(muLL*dEL)-1/(muLL*dLL)-1)
+
+## density_vec is defined above and is a monotonically increasing function designed to mimic and simulate invasion and establishment of An. stephensi
 K0_species2 <- if(as.integer(t) == 0) 2*density_vec[as.integer(1)]*dLL*mu0*(1+dPL*muPL)*gammaL*(lambda_species2+1)/(lambda_species2/(muLL*dEL)-1/(muLL*dLL)-1) else 2*density_vec[as.integer(t)]*dLL*mu0*(1+dPL*muPL)*gammaL*(lambda_species2+1)/(lambda_species2/(muLL*dEL)-1/(muLL*dLL)-1)
 
 # Seasonal carrying capacity KL = base carrying capacity K0 * effect for time of year theta:
 KL_species1 <- K0_species1 * theta_species1
 KL_species2 <- K0_species2 * theta_species2
 
-fv1 <- 1/( tau1/(1-zbar1) + tau2 ) # mosquito feeding rate (zbar is a derived intervention param.)
-fv2 <- 1/( tau1/(1-zbar2) + tau2 ) # mosquito feeding rate (zbar is a derived intervention param.)
+fv1 <- 1/( tau1/(1-zbar1) + tau2 ) # mosquito feeding rate for species 1 (zbar is a derived intervention param.)
+fv2 <- 1/( tau1/(1-zbar2) + tau2 ) # mosquito feeding rate species 2 (zbar is a derived intervention param.)
 
-mu1 <- -fv1*log(p1_1*p2) # mosquito death rate CHANGE THIS (MARA WROTE THIS - WHAT'S UP WITH THAT??)
-mu2 <- -fv2*log(p1_2*p2)
+mu1 <- -fv1*log(p1_1*p2) # mosquito death rate - species 1
+mu2 <- -fv2*log(p1_2*p2) # mosquito death rate - species 2
 
 # finding equilibrium and initial values for EL, LL & PL
 init_PL <- user()
@@ -436,9 +433,9 @@ initial(PL1) <- init_PL
 initial(LL1) <- init_LL
 initial(EL1) <- init_EL
 
-initial(PL2) <- init_PL * 0.01 ## CHECK, MIGHT REQUIRE CHANGING
-initial(LL2) <- init_LL * 0.01 ## CHECK, MIGHT REQUIRE CHANGING
-initial(EL2) <- init_EL * 0.01 ## CHECK, MIGHT REQUIRE CHANGING
+initial(PL2) <- init_PL * 0.01 ## CHECK - this is a bit of a fudge, but aim here is to initialise with a small, non-zero number (to reflect absence of stephensi at start of model run) so I think hopefully okay!
+initial(LL2) <- init_LL * 0.01 ## CHECK - this is a bit of a fudge, but aim here is to initialise with a small, non-zero number (to reflect absence of stephensi at start of model run) so I think hopefully okay!
+initial(EL2) <- init_EL * 0.01 ## CHECK - this is a bit of a fudge, but aim here is to initialise with a small, non-zero number (to reflect absence of stephensi at start of model run) so I think hopefully okay!
 
 # (beta_larval (egg rate) * total mosquito) - den. dep. egg mortality - egg hatching
 deriv(EL1) <- beta_larval1*mv1-muEL*(1+(EL1+LL1)/KL_species1)*EL1 - EL1/dEL # Note assumption of no overlap in breeding sites and no competition between Species 1 and 2
@@ -460,7 +457,7 @@ deriv(PL2) <- LL2/dLL - muPL*PL2 - PL2/dPL
 
 ##------------------------------------------------------------------------------
 ########################
-## INTERVENTION MODEL ##
+## INTERVENTION MODEL ## requires CHECK in big way
 ########################
 ##------------------------------------------------------------------------------
 
@@ -623,7 +620,7 @@ wbar1 <- 1 - Q0_species1 + Q0_species1*wh1
 wbar2 <- 1 - Q0_species2 + Q0_species2*wh2
 
 # p1 is the updated p10 given that interventions are now in place:
-p1_1 <- wbar1*p10/(1-zbar1*p10) # not currently
+p1_1 <- wbar1*p10/(1-zbar1*p10)
 p1_2 <- wbar2*p10/(1-zbar2*p10)
 
 Q_1 <- 1-(1-Q0_species1)/wbar1 # updated anthropophagy given interventions
@@ -632,7 +629,7 @@ Q_2 <- 1-(1-Q0_species2)/wbar2 # updated anthropophagy given interventions
 av1 <- fv1*Q_1 # biting rate on humans by species 1
 av2 <- fv2*Q_2 # biting rate on humans by species 2
 
-## CHECK THIS FOR MULTIPLE SPECIES - I think we want individual FOIs (i.e. av_mosq and av_human) for each mosquito species and then add the human ones up later when calculating EIR
+## Species-specific FOIs (calculated above, but which require species-specific av_mosq and av_human) - we then add the FOI on human ones up later when calculating EIR
 dim(av_mosq1) <- num_int
 av_mosq1[1:num_int] <- av1*w1[i]/wh1 # rate at which mosquitoes of species 1 bite each int. cat. - a bit unclear here why we multiply by w1/wh1 - this isn't consistent with Jamie's 2010 paper
 dim(av_human1) <- num_int
