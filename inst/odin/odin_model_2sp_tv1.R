@@ -334,10 +334,14 @@ surv2 <- exp(-mu2*delayMos)
 ince1 <- FOIv_species1 * Sv1 ## CHECK
 lag_incv1 <- ince1 * surv1
 incv1 <- delay(lag_incv1, delayMos)
+output(ince1) <- TRUE
+output(incv1) <- TRUE
 
 ince2 <- FOIv_species2 * Sv2 ## CHECK
 lag_incv2 <- ince2 * surv2
 incv2 <- delay(lag_incv2, delayMos)
+output(ince2) <- TRUE
+output(incv2) <- TRUE
 
 # Number of mosquitoes born (depends on PL, number of larvae), or is constant outside of seasonality
 betaa1 <- 0.5*PL1/dPL
